@@ -9,6 +9,11 @@ db.sqlite3
 /media/
 /staticfiles/
 /static/
+cni/
+hypotheques/
+location_plan/
+plans/
+titres/
 
 # Environment
 .env
