@@ -6,7 +6,7 @@ from Documents.models import PlanLocalisation, PlanCadastral, TitreFoncier, Cert
 class ParcelleViewSet(viewsets.ModelViewSet):
     queryset = Parcelle.objects.all()
     serializer_class = ParcelleSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
         parcelle = serializer.save()
@@ -22,20 +22,45 @@ class ParcelleViewSet(viewsets.ModelViewSet):
             
     def perform_update(self, serializer):
         parcelle = self.get_object()
-        
-        parcelle.plan_localisation.delete()
-        parcelle.certificat_hypotheque.delete()
-        parcelle.titre_foncier.delete()
-        parcelle.plan_cadastral.delete()
-        
+
         plan_cadastral = serializer.validated_data.pop("plan_cadastral", None)
         plan_localisation = serializer.validated_data.pop("plan_localisation", None)
         titre_foncier = serializer.validated_data.pop("titre_foncier", None)
         certificat_hypotheque = serializer.validated_data.pop("certificat_hypotheque", None)
-        
-        plan_cadastral = PlanCadastral.objects.create(doc=plan_cadastral)
-        plan_localisation = PlanLocalisation.objects.create(doc=plan_localisation)
-        titre_foncier = TitreFoncier.objects.create(doc=titre_foncier)
-        certificat_hypotheque = CertificatHypotheque.objects.create(doc=certificat_hypotheque)
-        
-        serializer.save(plan_cadastral=plan_cadastral, plan_localisation=plan_localisation, titre_foncier=titre_foncier, certificat_hypotheque=certificat_hypotheque)
+
+        if plan_cadastral:
+            if parcelle.plan_cadastral:
+                parcelle.plan_cadastral.delete()
+            plan_cadastral = PlanCadastral.objects.create(doc=plan_cadastral)
+        else:
+            plan_cadastral = parcelle.plan_cadastral
+
+        if plan_localisation:
+            if parcelle.plan_localisation:
+                parcelle.plan_localisation.delete()
+            plan_localisation = PlanLocalisation.objects.create(doc=plan_localisation)
+        else:
+            plan_localisation = parcelle.plan_localisation
+
+        if titre_foncier:
+            if parcelle.titre_foncier:
+                parcelle.titre_foncier.delete()
+            titre_foncier = TitreFoncier.objects.create(doc=titre_foncier)
+        else:
+            titre_foncier = parcelle.titre_foncier
+
+        if certificat_hypotheque:
+            if parcelle.certificat_hypotheque:
+                parcelle.certificat_hypotheque.delete()
+            certificat_hypotheque = CertificatHypotheque.objects.create(doc=certificat_hypotheque)
+        else:
+            certificat_hypotheque = parcelle.certificat_hypotheque
+
+        # Sauvegarde finale
+        serializer.save(
+            plan_cadastral=plan_cadastral,
+            plan_localisation=plan_localisation,
+            titre_foncier=titre_foncier,
+            certificat_hypotheque=certificat_hypotheque,
+        )
+
