@@ -13,6 +13,7 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from Documents.models import Cni
+from .tasks import send_verification_email
 
 User = get_user_model()
 
@@ -24,14 +25,10 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         token = make_email_token(user.id)
         verify_url = f"{settings.FRONTEND_URL}/verify-email/?token={token}"
-        # Send email (you must configure EMAIL_BACKEND)
-        send_mail(
-            subject="Vérifiez votre adresse email",
-            message=f"Cliquez pour vérifier: {verify_url}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+
+        # Envoi asynchrone avec Celery
+        send_verification_email.delay(user.email, verify_url)
+
 
 class VerifyEmailView(APIView):
     permission_classes = [permissions.AllowAny]

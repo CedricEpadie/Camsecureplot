@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      color: #333;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background: #1e40af;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Bienvenue sur CamSecurePlot 🚀</h2>
+    <p>Bonjour,</p>
+    <p>Merci de vous être inscrit ! Pour activer votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
+
+    <p style="text-align: center;">
+      <a href="{{ verify_url }}" class="btn">Vérifier mon email</a>
+    </p>
+
+    <p>Si vous n’avez pas créé de compte, ignorez simplement cet email.</p>
+
+    <div class="footer">
+      © {{ now|date:"Y" }} CamSecurePlot - Tous droits réservés.
+    </div>
+  </div>
+</body>
+</html>
