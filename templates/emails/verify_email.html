@@ -2,55 +2,79 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vérification d'email</title>
   <style>
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      background: #f9fafb;
-      color: #333;
-      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      text-align: center;
+      padding: 40px;
     }
     .container {
       max-width: 500px;
       margin: auto;
-      background: #ffffff;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 30px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.1);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    p {
+      margin-bottom: 25px;
+      font-size: 16px;
     }
     .btn {
       display: inline-block;
-      padding: 12px 20px;
-      background: #2563eb;
+      padding: 12px 24px;
+      border-radius: 30px;
+      background: #667eea;
       color: white;
       text-decoration: none;
-      border-radius: 8px;
       font-weight: bold;
+      transition: background 0.3s ease;
     }
     .btn:hover {
-      background: #1e40af;
+      background: #5a67d8;
+    }
+    .loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     .footer {
-      margin-top: 20px;
+      margin-top: 30px;
       font-size: 12px;
-      color: #888;
+      opacity: 0.8;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Bienvenue sur CamSecurePlot 🚀</h2>
-    <p>Bonjour,</p>
-    <p>Merci de vous être inscrit ! Pour activer votre compte, veuillez vérifier votre adresse email en cliquant sur le bouton ci-dessous :</p>
-
-    <p style="text-align: center;">
-      <a href="{{ verify_url }}" class="btn">Vérifier mon email</a>
-    </p>
-
-    <p>Si vous n’avez pas créé de compte, ignorez simplement cet email.</p>
-
-    <div class="footer">
-      © {{ now|date:"Y" }} CamSecurePlot - Tous droits réservés.
-    </div>
+    <h1>Vérifiez votre adresse email ✉️</h1>
+    <p>Bonjour,<br>Merci de vous être inscrit. Cliquez sur le bouton ci-dessous pour vérifier votre adresse email et activer votre compte.</p>
+    
+    <a href="{{ verification_url }}" class="btn">✅ Vérifier mon email</a>
+    
+    <div class="loader"></div>
+    
+    <p class="footer">Si vous n'avez pas créé de compte, ignorez simplement cet email.</p>
   </div>
 </body>
 </html>
