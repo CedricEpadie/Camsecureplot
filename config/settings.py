@@ -135,13 +135,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
-#celery settings
-from urllib.parse import quote_plus
-
-password = quote_plus("pa$$word@123")
-
-CELERY_BROKER_URL =config("REDIS_URL")
-CELERY_RESULT_BACKEND =config("REDIS_URL")
 
 
 
@@ -170,7 +163,7 @@ SIMPLE_JWT = {
 
 # Configure email backend for sending verification / reset emails
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT')
