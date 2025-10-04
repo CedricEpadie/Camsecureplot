@@ -15,3 +15,4 @@ class CertificatHypotheque(models.Model):
     
 class PlanLocalisation(models.Model):
     doc = models.FileField(upload_to="location_plan/")
+
