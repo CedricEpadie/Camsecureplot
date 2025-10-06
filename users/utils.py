@@ -1,29 +1,23 @@
+from mailersend import MailerSendClient, EmailBuilder
 from django.conf import settings
 from django.template.loader import render_to_string
-from django.core.mail import send_mail
-from django.conf import settings
-import logging
+from decouple import config
 
-logger = logging.getLogger(__name__)
+def send_verification_email(to_email: str, verification_url: str):
+    api = config('MAILERSEND_API_KEY')
+    # Initialiser le client MailerSend avec la clé API
+    ms = MailerSendClient(api_key=api)
+    html = render_to_string('emails/verify_email.html', context={'verify_url': verification_url})
 
-def send_email_with_html_body(subjet:str, receivers:list, template:str, context:dict):
-    ''' Envoyer un email personnaliser à un utilisateur spécifique. '''
+    # Construire l'email
+    email = (EmailBuilder()
+             .from_email(settings.DEFAULT_FROM_EMAIL, "test-r83ql3pk69xgzw1j.mlsender.net")
+             .to_many([{"email": to_email, "name": to_email.split("@")[0]}])
+             .subject("Vérification de votre email")
+             .html(html)
+             .text(f"Bonjour, merci de vous être inscrit. Vérifiez votre email ici : {verification_url}")
+             .build())
 
-    try:
-        message = render_to_string(template, context)
-
-        send_mail(
-            subjet,
-            message,
-            settings.EMAIL_HOST_USER,
-            receivers,
-            fail_silently=True,
-            html_message=message,
-        )
-        
-        return True
-        
-    except Exception as e:
-        logger.error(e)
-        
-    return False
+    # Envoyer l'email
+    response = ms.emails.send(email)
+    return response

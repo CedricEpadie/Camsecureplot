@@ -1,3 +1,4 @@
 from django.contrib import admin
+from .models import Parcelle
 
-# Register your models here.
+admin.site.register(Parcelle)
