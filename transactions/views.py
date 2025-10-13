@@ -12,7 +12,6 @@ from users.models import CustomUser
 from django.db.models import Q
 User=CustomUser
 
-
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
@@ -101,9 +100,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             "progression": progression
         }, status=status.HTTP_200_OK)
 
-
-  
-
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def valider(self, request, pk=None):
         transaction = self.get_object()
@@ -157,7 +153,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         return Response(ValidationSerializer(validation).data, status=status.HTTP_200_OK)
 
-    
     @action(detail=True, methods=["get"], url_path="documents/download", permission_classes=[permissions.IsAuthenticated])
     def download_documents(self, request, pk=None):
         transaction = self.get_object()
@@ -243,6 +238,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         response = HttpResponse(buffer.getvalue(), content_type="application/zip")
         response["Content-Disposition"] = f'attachment; filename="transaction_{transaction.id}_documents.zip"'
         return response
+    
 class UserTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Vue simple : retourne uniquement les transactions
