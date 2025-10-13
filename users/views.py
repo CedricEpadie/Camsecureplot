@@ -1,8 +1,9 @@
 from rest_framework import generics, status, permissions
+from rest_framework import viewsets
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from .serializers import (
-    RegisterSerializer, UserSerializer,
+    RegisterSerializer, UserSerializer,UserSerializer2,
     ChangePasswordSerializer,
     ResetPasswordRequestSerializer,
     ResetPasswordConfirmSerializer
@@ -158,3 +159,21 @@ class ResetPasswordConfirmView(generics.GenericAPIView):
         user.set_password(new_password)
         user.save()
         return Response({"detail": "Mot de passe réinitialisé avec succès."})
+class GetUserByEmailView(generics.GenericAPIView):
+    """
+    Retrieve a user by email. Returns id, email, name and role.
+    """
+    serializer_class = UserSerializer2
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        email = request.query_params.get("email")
+        if not email:
+            return Response({"detail": "Email parameter is required."}, status=400)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"detail": "No user found with this email."}, status=404)
+        
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)

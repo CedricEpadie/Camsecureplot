@@ -54,3 +54,16 @@ class ResetPasswordConfirmSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
     new_password = serializers.CharField(validators=[password_validation.validate_password])
+class UserSerializer2(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "nom", "prenom", "full_name", "role"]
+
+    def get_full_name(self, obj):
+        return f"{obj.prenom} {obj.nom}".strip()
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'nom', 'prenom', 'telephone', 'role']

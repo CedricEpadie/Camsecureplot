@@ -37,10 +37,11 @@ class ParcelleSerializer(serializers.Serializer):
         required=False
     )
     
-    plan_localisation = serializers.FileField(write_only=True, required=True)
-    titre_foncier = serializers.FileField(write_only=True, required=True)
-    plan_cadastral = serializers.FileField(write_only=True, required=True)
-    certificat_hypotheque = serializers.FileField(write_only=True, required=True)
+    plan_localisation = serializers.FileField(write_only=True, required=False, allow_null=True)
+    titre_foncier = serializers.FileField(write_only=True, required=False, allow_null=True)
+    plan_cadastral = serializers.FileField(write_only=True, required=False, allow_null=True)
+    certificat_hypotheque = serializers.FileField(write_only=True, required=False, allow_null=True)
+
 
     proprietaires = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -49,18 +50,21 @@ class ParcelleSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         validated_data.pop("proprietaires_id", None)
-        
-        plan_localisation = validated_data.pop("plan_localisation")
-        titre_foncier = validated_data.pop("titre_foncier")
-        plan_cadastral = validated_data.pop("plan_cadastral")
-        certificat_hypotheque = validated_data.pop("certificat_hypotheque")
-        
-        validated_data["plan_localisation"] = PlanLocalisation.objects.create(doc=plan_localisation)
-        validated_data["titre_foncier"] = TitreFoncier.objects.create(doc=titre_foncier)
-        validated_data["plan_cadastral"] = PlanCadastral.objects.create(doc=plan_cadastral)
-        validated_data["certificat_hypotheque"] = CertificatHypotheque.objects.create(doc=certificat_hypotheque)
-        
+
+        # Vérifie que les fichiers sont bien fournis à la création
+        required_files = ["plan_localisation", "titre_foncier", "plan_cadastral", "certificat_hypotheque"]
+        for field in required_files:
+            if field not in validated_data:
+                raise serializers.ValidationError({field: "Ce fichier est requis pour créer une parcelle."})
+
+        # Création des documents liés
+        validated_data["plan_localisation"] = PlanLocalisation.objects.create(doc=validated_data.pop("plan_localisation"))
+        validated_data["titre_foncier"] = TitreFoncier.objects.create(doc=validated_data.pop("titre_foncier"))
+        validated_data["plan_cadastral"] = PlanCadastral.objects.create(doc=validated_data.pop("plan_cadastral"))
+        validated_data["certificat_hypotheque"] = CertificatHypotheque.objects.create(doc=validated_data.pop("certificat_hypotheque"))
+
         return Parcelle.objects.create(**validated_data)
+
 
     def update(self, instance, validated_data):
         validated_data.pop("proprietaires_id", None)
