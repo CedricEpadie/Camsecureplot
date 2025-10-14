@@ -24,3 +24,11 @@ urlpatterns = [
     path("password/reset/confirm/", ResetPasswordConfirmView.as_view(), name="password-reset-confirm"),
     path("users/by-email/", GetUserByEmailView.as_view(), name="user-by-email"),
 ]
+
+from rest_framework.routers import DefaultRouter
+from .views import UserViewSet
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
+
+urlpatterns += router.urls

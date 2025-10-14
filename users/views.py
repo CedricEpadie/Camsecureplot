@@ -1,4 +1,5 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, filters
+
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
@@ -177,3 +178,14 @@ class GetUserByEmailView(generics.GenericAPIView):
         
         serializer = self.get_serializer(user)
         return Response(serializer.data)
+    
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API pour rechercher des utilisateurs.
+    Exemple : /api/auth/users/?search=email@example.com
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['email', 'prenom', 'nom']

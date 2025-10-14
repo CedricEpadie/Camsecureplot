@@ -10,6 +10,7 @@ class ParcelleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         parcelle = serializer.save()
+        proprietaires = self.request.data.getlist("proprietaires_id")      
 
         # Si admin, possibilité d’ajouter un propriétaire spécifique
         if self.request.user.role == "admin":
@@ -19,6 +20,8 @@ class ParcelleViewSet(viewsets.ModelViewSet):
         else:
             # Ajouter automatiquement le créateur comme propriétaire
             parcelle.proprietaires.add(self.request.user)
+            parcelle.proprietaires.add(*proprietaires)
+
             
     def update(self, request, *args, **kwargs):
         partial = True

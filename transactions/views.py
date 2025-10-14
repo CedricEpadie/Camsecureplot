@@ -21,14 +21,13 @@ class TransactionViewSet(viewsets.ModelViewSet):
         parcelle_id = request.data.get("parcelle")
         parcelle = Parcelle.objects.get(id=parcelle_id)
         
-        # L'utilisateur qui crée la transaction devient l'acheteur
-        utilisateur = request.user
+        acheteur_id =  request.data.get("acheteur")
+        acheteur = User.objects.get(id=acheteur_id)
 
         # Créer la transaction
         transaction = Transaction.objects.create(
             parcelle=parcelle,
-            acheteur=utilisateur,
-            etat=request.data.get("etat", "draft")
+            acheteur=acheteur,
         )
 
         # Ajouter tous les propriétaires comme vendeurs
@@ -36,7 +35,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         transaction.vendeurs.set(vendeurs)
 
         # Exclure l'acheteur et les vendeurs pour le notaire et le géomètre
-        exclusion_ids = list(vendeurs.values_list('id', flat=True)) + [utilisateur.id]
+        exclusion_ids = list(vendeurs.values_list('id', flat=True)) + [request.user.id]
 
         # Sélection aléatoire d'un notaire
         notaires = User.objects.filter(role="notaire", is_active=True).exclude(id__in=exclusion_ids)

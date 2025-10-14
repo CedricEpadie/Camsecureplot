@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Transaction, Validation
 from users.models import CustomUser
 User=CustomUser
+
 class ValidationSerializer(serializers.ModelSerializer):
     user_email = serializers.ReadOnlyField(source="user.email")
 

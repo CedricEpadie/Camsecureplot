@@ -33,10 +33,26 @@ class Transaction(models.Model):
         null=True,
         blank=True
     )
-    
-    etat = models.CharField(max_length=20, default="draft")
+
+    # ✅ Liste des choix possibles pour l'état
+    ETAT_CHOICES = [
+        ("pending", "En attente"),
+        ("approved", "Approuvée"),
+        ("rejected", "Rejetée"),
+    ]
+
+    etat = models.CharField(
+        max_length=20,
+        choices=ETAT_CHOICES,
+        default="pending",  # ✅ valeur par défaut
+    )
+
     date_debut = models.DateTimeField(auto_now_add=True)
     date_fin = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Transaction #{self.id} - {self.get_etat_display()}"
+
 
 class Validation(models.Model):
     ROLES = [("notaire", "Notaire"), ("geometre", "Géomètre"), ("acheteur", "Acheteur"), ("vendeur", "Vendeur")]
