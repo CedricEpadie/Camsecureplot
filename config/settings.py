@@ -202,6 +202,10 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://camsecureplot-qbp5.onrender.com",
+]
+
 CORS_ALLOW_METHODS = [
     "DELETE",
     "GET",
