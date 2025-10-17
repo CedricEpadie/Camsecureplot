@@ -24,7 +24,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
     from django.db import IntegrityError
 
     def create(self, request, *args, **kwargs):
-        parcelle_id = request.data.get("parcelfrom django.utils.timezone import localtimele")
+        parcelle_id = request.data.get("parcelle")
+        print("Parcelle ID:                                        ", parcelle_id)
         acheteur_id = request.data.get("acheteur")
 
         try:
