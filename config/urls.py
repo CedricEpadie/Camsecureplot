@@ -14,7 +14,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from parcelles.views import ParcelleViewSet,UserParcelleViewSet
-from transactions.views import TransactionViewSet,UserTransactionViewSet
+from transactions.views import TransactionViewSet,UserTransactionViewSet,ParcelleHistoriqueViewSet
 from messagerie.views import MessageViewSet
 
 
@@ -24,6 +24,8 @@ router.register(r"transactions", TransactionViewSet, basename="transactions")
 router.register(r"user-transactions", UserTransactionViewSet, basename="user-transactions")
 router.register(r"messagerie", MessageViewSet, basename="messagerie")
 router.register(r"user-parcelles", UserParcelleViewSet, basename="user-parcelles")
+router.register(r"parcelle-historique", ParcelleHistoriqueViewSet, basename="parcelle-historique")
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),

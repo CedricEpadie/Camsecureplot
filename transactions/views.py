@@ -1,6 +1,8 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from django.utils import timezone
+from parcelles.models import Possession
 from .models import Transaction, Validation
 from .serializers import TransactionSerializer, ValidationSerializer
 import io, zipfile
@@ -9,6 +11,8 @@ from django.http import HttpResponse
 from rest_framework import status
 import random
 from users.models import CustomUser
+from django.utils.timezone import localtime
+from django.db import IntegrityError
 from django.db.models import Q
 User=CustomUser
 
@@ -17,37 +21,38 @@ class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    from django.db import IntegrityError
+
     def create(self, request, *args, **kwargs):
-        parcelle_id = request.data.get("parcelle")
-        parcelle = Parcelle.objects.get(id=parcelle_id)
-        
-        acheteur_id =  request.data.get("acheteur")
-        acheteur = User.objects.get(id=acheteur_id)
+        parcelle_id = request.data.get("parcelfrom django.utils.timezone import localtimele")
+        acheteur_id = request.data.get("acheteur")
 
-        # Créer la transaction
-        transaction = Transaction.objects.create(
-            parcelle=parcelle,
-            acheteur=acheteur,
-        )
+        try:
+            parcelle = Parcelle.objects.get(id=parcelle_id)
+            acheteur = User.objects.get(id=acheteur_id)
 
-        # Ajouter tous les propriétaires comme vendeurs
-        vendeurs = parcelle.proprietaires.all()
-        transaction.vendeurs.set(vendeurs)
+            transaction = Transaction.objects.create(parcelle=parcelle, acheteur=acheteur)
 
-        # Exclure l'acheteur et les vendeurs pour le notaire et le géomètre
-        exclusion_ids = list(vendeurs.values_list('id', flat=True)) + [request.user.id]
+            vendeurs = parcelle.proprietaires.all()
+            transaction.vendeurs.set(vendeurs)
 
-        # Sélection aléatoire d'un notaire
-        notaires = User.objects.filter(role="notaire", is_active=True).exclude(id__in=exclusion_ids)
-        transaction.notaire = random.choice(notaires) if notaires.exists() else None
+            exclusion_ids = list(vendeurs.values_list('id', flat=True)) + [request.user.id]
+            notaires = User.objects.filter(role="notaire", is_active=True).exclude(id__in=exclusion_ids)
+            geometres = User.objects.filter(role="geometre", is_active=True).exclude(id__in=exclusion_ids)
 
-        # Sélection aléatoire d'un géomètre
-        geometres = User.objects.filter(role="geometre", is_active=True).exclude(id__in=exclusion_ids)
-        transaction.geometre = random.choice(geometres) if geometres.exists() else None
+            transaction.notaire = random.choice(notaires) if notaires.exists() else None
+            transaction.geometre = random.choice(geometres) if geometres.exists() else None
+            transaction.save()
 
-        transaction.save()
-        serializer = self.get_serializer(transaction)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            serializer = self.get_serializer(transaction)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except IntegrityError:
+            return Response(
+                {"detail": "This parcel is currently involved in an active land transaction. Please complete or delete it before creating a new one."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def participants_validation(self, request, pk=None):
@@ -104,7 +109,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         transaction = self.get_object()
         user = request.user
 
-        # 🔹 Déterminer le rôle du user pour cette transaction
+        # 🔹 Déterminer le rôle du user
         if user == transaction.acheteur:
             role = "acheteur"
         elif user in transaction.vendeurs.all():
@@ -112,18 +117,18 @@ class TransactionViewSet(viewsets.ModelViewSet):
         elif user.role in ["notaire", "geometre"]:
             role = user.role
         else:
-            return Response({"error": "User not authorized for this transaction"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Utilisateur non autorisé."}, status=status.HTTP_403_FORBIDDEN)
 
         # 🔹 Vérifier le statut envoyé
         statut = request.data.get("statut")
         if statut not in ["approved", "rejected"]:
-            return Response({"error": "Invalid statut"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Statut invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
         # 🔹 Créer ou mettre à jour la validation
         validation, created = Validation.objects.get_or_create(
             transaction=transaction,
-            role=role,
             user=user,
+            role=role,
             defaults={"statut": statut}
         )
         if not created:
@@ -139,19 +144,27 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         all_validated = True
         for participant in participants:
-            # On vérifie si chaque participant a validé
             v = Validation.objects.filter(transaction=transaction, user=participant, statut="approved").first()
             if not v:
                 all_validated = False
                 break
 
-        # 🔹 Si tout le monde a validé -> approuver la transaction
+        # ✅ Si tous ont validé → approuver et transférer la propriété
         if all_validated:
             transaction.etat = "approved"
+            transaction.date_fin = timezone.now()
             transaction.save()
 
-        return Response(ValidationSerializer(validation).data, status=status.HTTP_200_OK)
+            parcelle = transaction.parcelle
+            # Supprimer les anciennes possessions (anciens vendeurs)
+            Possession.objects.filter(parcelle=parcelle).delete()
+            # Créer la nouvelle possession (acheteur)
+            Possession.objects.create(user=transaction.acheteur, parcelle=parcelle)
+            # Mettre à jour le statut de la parcelle
+            parcelle.statut = "sold"
+            parcelle.save()
 
+        return Response(ValidationSerializer(validation).data, status=status.HTTP_200_OK)
     @action(detail=True, methods=["get"], url_path="documents/download", permission_classes=[permissions.IsAuthenticated])
     def download_documents(self, request, pk=None):
         transaction = self.get_object()
@@ -240,7 +253,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
     
 class UserTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Vue simple : retourne uniquement les transactions
+    Vue simple : retourne uniquement les transfrom django.utils.timezone import localtimeactions
     liées à l'utilisateur connecté.
     """
     serializer_class = TransactionSerializer
@@ -259,3 +272,114 @@ class UserTransactionViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+
+
+
+from django.db.models import Prefetch
+
+
+
+
+
+class ParcelleHistoriqueViewSet(viewsets.ViewSet):
+    """
+    ViewSet to retrieve the detailed transaction history of a parcel (parcelle),
+    including all validation actions, dates, and the actors involved.
+    """
+
+    @action(detail=True, methods=["get"], url_path="historique")
+    def historique_parcelle(self, request, pk: int = None):
+        try:
+            parcelle = Parcelle.objects.get(pk=pk)
+        except Parcelle.DoesNotExist:
+            return Response(
+                {"error": "Parcel not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        transactions = (
+            Transaction.objects.filter(parcelle=parcelle)
+            .prefetch_related(
+                Prefetch(
+                    "validations",
+                    queryset=Validation.objects.all().order_by("date_validation")
+                ),
+                "vendeurs",  # important: load M2M efficiently
+                "acheteur",
+                "geometre",
+                "notaire"
+            )
+            .order_by("date_debut")
+        )
+
+        historique = []
+        for t in transactions:
+            # ---- 🟢 VALIDATIONS ----
+            validations_data = []
+            for v in t.validations.all():
+                user = getattr(v, "user", None)
+                user_name = (
+                    f"{user.prenom} {user.nom}".strip()
+                    if user and (user.prenom or user.nom)
+                    else getattr(user, "email", None)
+                )
+
+                validations_data.append({
+                    "role": getattr(v, "role", None),
+                    "status": getattr(v, "statut", None),
+                    "validated_by": user_name,
+                    "date": localtime(v.date_validation).strftime("%Y-%m-%d %H:%M:%S")
+                    if getattr(v, "date_validation", None)
+                    else None,
+                })
+
+            # ---- 🟢 VENDEURS ----
+            vendeurs_list = [
+                f"{vendeur.prenom} {vendeur.nom}".strip()
+                for vendeur in t.vendeurs.all()
+            ] if hasattr(t, "vendeurs") else []
+
+            # ---- 🟢 HISTORIQUE ----
+            historique.append({
+                "transaction_id": t.id,
+                "etat": getattr(t, "etat", None),
+                "vendeurs": vendeurs_list,
+                "acheteur": (
+                    f"{t.acheteur.prenom} {t.acheteur.nom}".strip()
+                    if getattr(t, "acheteur", None)
+                    else None
+                ),
+                "geometre": (
+                    f"{t.geometre.prenom} {t.geometre.nom}".strip()
+                    if getattr(t, "geometre", None)
+                    else None
+                ),
+                "notaire": (
+                    f"{t.notaire.prenom} {t.notaire.nom}".strip()
+                    if getattr(t, "notaire", None)
+                    else None
+                ),
+                "date_debut": (
+                    localtime(t.date_debut).strftime("%Y-%m-%d %H:%M:%S")
+                    if getattr(t, "date_debut", None)
+                    else None
+                ),
+                "date_fin": (
+                    localtime(t.date_fin).strftime("%Y-%m-%d %H:%M:%S")
+                    if getattr(t, "date_fin", None)
+                    else None
+                ),
+                "validations": validations_data,
+                "resume": (
+                    f"Transaction #{t.id}: état = {getattr(t, 'etat', 'N/A')}. "
+                    f"Débutée le {localtime(t.date_debut).strftime('%d/%m/%Y') if t.date_debut else 'N/A'}"
+                    f"{' — validée le ' + localtime(t.date_fin).strftime('%d/%m/%Y') if t.date_fin else ''}."
+                )
+            })
+
+        return Response({
+            "parcelle": getattr(parcelle, "numero_unique", parcelle.id),
+            "historique_complet": historique,
+            "total_transactions": len(historique)
+        }, status=status.HTTP_200_OK)
