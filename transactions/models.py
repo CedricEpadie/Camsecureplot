@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from parcelles.models import Parcelle  # adapte selon ton arborescence
-
+from django.db.models import Q
 class Transaction(models.Model):
     parcelle = models.ForeignKey(Parcelle, on_delete=models.CASCADE)
 
@@ -49,6 +49,15 @@ class Transaction(models.Model):
 
     date_debut = models.DateTimeField(auto_now_add=True)
     date_fin = models.DateTimeField(null=True, blank=True)
+    class Meta:
+        constraints = [
+            # ✅ Correction : on utilise bien "etat" ici et non "status"
+            models.UniqueConstraint(
+                fields=["parcelle"],
+                condition=Q(etat__in=["pending"]),
+                name="unique_active_transaction_per_parcelle",
+            )
+        ]
 
     def __str__(self):
         return f"Transaction #{self.id} - {self.get_etat_display()}"
