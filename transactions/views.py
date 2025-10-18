@@ -15,6 +15,7 @@ from django.utils.timezone import localtime
 from django.db import IntegrityError
 from django.db.models import Q
 User=CustomUser
+from django.db.models import Prefetch
 
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
@@ -25,7 +26,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         parcelle_id = request.data.get("parcelle")
-        print("Parcelle ID:                                        ", parcelle_id)
         acheteur_id = request.data.get("acheteur")
 
         try:
@@ -53,7 +53,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
                 {"detail": "This parcel is currently involved in an active land transaction. Please complete or delete it before creating a new one."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
     
     @action(detail=True, methods=["get"], permission_classes=[permissions.IsAuthenticated])
     def participants_validation(self, request, pk=None):
@@ -166,6 +165,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
             parcelle.save()
 
         return Response(ValidationSerializer(validation).data, status=status.HTTP_200_OK)
+    
     @action(detail=True, methods=["get"], url_path="documents/download", permission_classes=[permissions.IsAuthenticated])
     def download_documents(self, request, pk=None):
         transaction = self.get_object()
@@ -274,15 +274,6 @@ class UserTransactionViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
-
-
-
-from django.db.models import Prefetch
-
-
-
-
-
 class ParcelleHistoriqueViewSet(viewsets.ViewSet):
     """
     ViewSet to retrieve the detailed transaction history of a parcel (parcelle),
