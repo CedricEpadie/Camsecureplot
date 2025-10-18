@@ -19,6 +19,7 @@ titres/
 .env
 *.env
 venv/
+.venv/
 
 # IDEs
 .vscode/

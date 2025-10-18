@@ -134,6 +134,14 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if not created:
             validation.statut = statut
             validation.save()
+        print(statut)    
+        if statut == 'rejected':
+            print(transaction.etat)
+            transaction.etat = 'rejected'
+            print(transaction.etat)
+        transaction.save()    
+            
+            
 
         # 🔹 Vérifier si tous les participants ont validé
         participants = list(transaction.vendeurs.all()) + [transaction.acheteur]
